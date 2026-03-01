@@ -1,0 +1,16 @@
+{
+  "name": "smart-online-auction",
+  "version": "1.0.0",
+  "description": "Smart Online Auction Platform",
+  "private": true,
+  "scripts": {
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "dev": "concurrently \"cd server && npm run dev\" \"cd client && npm run dev\"",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "seed": "cd server && node src/seed.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
