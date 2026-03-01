@@ -106,6 +106,10 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 async function startServer() {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('Missing required environment variable: JWT_SECRET');
+  }
+
   // Initialize database first
   await initDatabase();
   console.log('Database initialized');
