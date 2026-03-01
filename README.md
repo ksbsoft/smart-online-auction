@@ -168,6 +168,17 @@ Set these backend environment variables on your server host:
 
 Use `CLIENT_URLS` as a comma-separated list of allowed frontend origins.
 
+### Railway note (monorepo)
+
+This repo uses a monorepo structure (`client/` + `server/`).  
+If Railway deploys from repo root, it may fail because backend dependencies are in `server/`.
+
+This project includes `nixpacks.toml` to force Railway to:
+- install: `npm --prefix server ci --omit=dev`
+- start: `npm --prefix server start`
+
+After pulling latest commit in Railway, redeploy the service.
+
 ### 3) Frontend env example
 
 See `client/.env.production.example` for required variables.

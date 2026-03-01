@@ -1,0 +1,8 @@
+[variables]
+NODE_ENV = "production"
+
+[phases.install]
+cmds = ["npm --prefix server ci --omit=dev"]
+
+[start]
+cmd = "npm --prefix server start"
