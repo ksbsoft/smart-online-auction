@@ -40,6 +40,7 @@ jobs:
       - name: Build client
         run: npm run build
         env:
+          VITE_BASE_PATH: /smart-online-auction/
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_SOCKET_URL: ${{ secrets.VITE_SOCKET_URL }}
 
