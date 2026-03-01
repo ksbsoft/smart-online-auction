@@ -3,6 +3,8 @@ import socket from '../lib/socket';
 import { DollarSign, Send, AlertCircle, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+const BID_RESPONSE_TIMEOUT_MS = 10000;
+
 export default function BidPanel({ auction, onBidPlaced }) {
   const [bidAmount, setBidAmount] = useState('');
   const [bidderName, setBidderName] = useState('');
@@ -10,6 +12,7 @@ export default function BidPanel({ auction, onBidPlaced }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastBid, setLastBid] = useState(null);
   const formRef = useRef(null);
+  const submitTimeoutRef = useRef(null);
 
   // Load saved bidder info
   useEffect(() => {
@@ -29,7 +32,15 @@ export default function BidPanel({ auction, onBidPlaced }) {
 
   // Socket event handlers
   useEffect(() => {
+    const clearSubmitTimeout = () => {
+      if (submitTimeoutRef.current) {
+        clearTimeout(submitTimeoutRef.current);
+        submitTimeoutRef.current = null;
+      }
+    };
+
     const handleBidSuccess = (data) => {
+      clearSubmitTimeout();
       setIsSubmitting(false);
       setLastBid(data);
       toast.success(`Bid of $${data.amount.toLocaleString()} placed successfully!`);
@@ -37,6 +48,7 @@ export default function BidPanel({ auction, onBidPlaced }) {
     };
 
     const handleBidError = (data) => {
+      clearSubmitTimeout();
       setIsSubmitting(false);
       toast.error(data.message);
     };
@@ -45,12 +57,33 @@ export default function BidPanel({ auction, onBidPlaced }) {
     socket.on('bid-error', handleBidError);
 
     return () => {
+      clearSubmitTimeout();
       socket.off('bid-success', handleBidSuccess);
       socket.off('bid-error', handleBidError);
     };
   }, [onBidPlaced]);
 
-  const handleSubmit = (e) => {
+  const ensureSocketConnected = async () => {
+    if (socket.connected) return true;
+
+    socket.connect();
+
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        socket.off('connect', onConnect);
+        resolve(false);
+      }, 5000);
+
+      const onConnect = () => {
+        clearTimeout(timer);
+        resolve(true);
+      };
+
+      socket.once('connect', onConnect);
+    });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!bidderName.trim()) {
@@ -68,7 +101,19 @@ export default function BidPanel({ auction, onBidPlaced }) {
     localStorage.setItem('bidder_name', bidderName);
     if (bidderEmail) localStorage.setItem('bidder_email', bidderEmail);
 
+    const connected = await ensureSocketConnected();
+    if (!connected) {
+      toast.error('Connection issue. Please try again in a moment.');
+      return;
+    }
+
     setIsSubmitting(true);
+    submitTimeoutRef.current = setTimeout(() => {
+      setIsSubmitting(false);
+      toast.error('Bid request timed out. Please try again.');
+      submitTimeoutRef.current = null;
+    }, BID_RESPONSE_TIMEOUT_MS);
+
     socket.emit('place-bid', {
       auctionId: auction.id,
       bidderName: bidderName.trim(),

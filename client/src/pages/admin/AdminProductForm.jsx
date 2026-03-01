@@ -19,6 +19,8 @@ export default function AdminProductForm() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [addingCategory, setAddingCategory] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(isEdit);
 
@@ -81,6 +83,27 @@ export default function AdminProductForm() {
       toast.error(err.response?.data?.error || 'Failed to save product');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    const name = newCategoryName.trim();
+    if (!name) {
+      toast.error('Please enter a category name');
+      return;
+    }
+
+    setAddingCategory(true);
+    try {
+      const { data } = await api.post('/categories', { name });
+      setCategories((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+      setForm((prev) => ({ ...prev, category_id: String(data.id) }));
+      setNewCategoryName('');
+      toast.success('Category created');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to create category');
+    } finally {
+      setAddingCategory(false);
     }
   };
 
@@ -174,6 +197,23 @@ export default function AdminProductForm() {
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="input-field"
+                  placeholder="New category name"
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateCategory}
+                  disabled={addingCategory}
+                  className="btn-secondary whitespace-nowrap disabled:opacity-60"
+                >
+                  {addingCategory ? 'Adding...' : 'Add Category'}
+                </button>
+              </div>
             </div>
 
             <div>
