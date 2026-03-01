@@ -1,4 +1,5 @@
 const { getDb } = require('./database');
+const jwt = require('jsonwebtoken');
 
 // Simple in-memory rate limiter for bids
 const bidRateLimit = new Map();
@@ -67,7 +68,28 @@ function setupSocket(io) {
 
     // Place a bid
     socket.on('place-bid', (data) => {
-      const { auctionId, bidderName, bidderEmail, amount } = data;
+      const { auctionId, amount, token } = data;
+
+      if (!token) {
+        socket.emit('bid-error', { message: 'Please sign in before placing a bid' });
+        return;
+      }
+
+      let authUser;
+      try {
+        authUser = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (err) {
+        socket.emit('bid-error', { message: 'Your session expired. Please sign in again.' });
+        return;
+      }
+
+      if (!authUser?.id || !['bidder', 'admin'].includes(authUser.role)) {
+        socket.emit('bid-error', { message: 'Unauthorized bidder session' });
+        return;
+      }
+
+      const bidderName = (authUser.fullName || authUser.username || '').trim();
+      const bidderEmail = authUser.email || '';
 
       if (!auctionId || !bidderName || !amount) {
         socket.emit('bid-error', { message: 'Missing required fields' });

@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import socket from '../lib/socket';
 import { DollarSign, Send, AlertCircle, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 const BID_RESPONSE_TIMEOUT_MS = 10000;
 
@@ -13,14 +15,22 @@ export default function BidPanel({ auction, onBidPlaced }) {
   const [lastBid, setLastBid] = useState(null);
   const formRef = useRef(null);
   const submitTimeoutRef = useRef(null);
+  const location = useLocation();
+  const { bidderUser, isBidderAuthenticated, bidderToken } = useAuth();
 
   // Load saved bidder info
   useEffect(() => {
+    if (isBidderAuthenticated && bidderUser) {
+      setBidderName(bidderUser.fullName || bidderUser.username || '');
+      setBidderEmail(bidderUser.email || '');
+      return;
+    }
+
     const savedName = localStorage.getItem('bidder_name');
     const savedEmail = localStorage.getItem('bidder_email');
     if (savedName) setBidderName(savedName);
     if (savedEmail) setBidderEmail(savedEmail);
-  }, []);
+  }, [isBidderAuthenticated, bidderUser]);
 
   const minBid = auction.current_bid > 0
     ? auction.current_bid + auction.bid_increment
@@ -86,6 +96,11 @@ export default function BidPanel({ auction, onBidPlaced }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!isBidderAuthenticated || !bidderToken) {
+      toast.error('Please sign in before placing a bid');
+      return;
+    }
+
     if (!bidderName.trim()) {
       toast.error('Please enter your name');
       return;
@@ -118,7 +133,8 @@ export default function BidPanel({ auction, onBidPlaced }) {
       auctionId: auction.id,
       bidderName: bidderName.trim(),
       bidderEmail: bidderEmail.trim(),
-      amount
+      amount,
+      token: bidderToken,
     });
   };
 
@@ -144,6 +160,26 @@ export default function BidPanel({ auction, onBidPlaced }) {
             <span className="font-semibold"> ${auction.final_price?.toLocaleString()}</span>
           </p>
         )}
+      </div>
+    );
+  }
+
+  if (!isBidderAuthenticated) {
+    return (
+      <div className="bg-white rounded-xl border-2 border-primary-200 overflow-hidden">
+        <div className="bg-gradient-to-r from-primary-600 to-purple-600 px-6 py-4">
+          <h3 className="text-white font-bold text-lg">Sign in required</h3>
+          <p className="text-white/80 text-sm mt-1">Create an account or sign in to place bids.</p>
+        </div>
+        <div className="p-6 space-y-3">
+          <Link to="/login" state={{ from: location.pathname }} className="w-full btn-primary inline-flex items-center justify-center py-3">
+            Sign In to Bid
+          </Link>
+          <Link to="/register" state={{ from: location.pathname }} className="w-full btn-secondary inline-flex items-center justify-center py-3">
+            Create Account
+          </Link>
+          <p className="text-xs text-gray-500 text-center">You can still view auction details without signing in.</p>
+        </div>
       </div>
     );
   }
@@ -178,6 +214,7 @@ export default function BidPanel({ auction, onBidPlaced }) {
               onChange={(e) => setBidderName(e.target.value)}
               className="input-field"
               placeholder="John Smith"
+              readOnly
               required
             />
           </div>
@@ -189,6 +226,7 @@ export default function BidPanel({ auction, onBidPlaced }) {
               onChange={(e) => setBidderEmail(e.target.value)}
               className="input-field"
               placeholder="john@email.com"
+              readOnly
             />
           </div>
         </div>

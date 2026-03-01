@@ -134,8 +134,12 @@ async function initDatabase() {
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
+      email TEXT,
+      full_name TEXT,
       password TEXT NOT NULL,
       role TEXT DEFAULT 'admin',
+      reset_token TEXT,
+      reset_token_expires_at DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     CREATE TABLE IF NOT EXISTS categories (
@@ -189,6 +193,23 @@ async function initDatabase() {
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_auctions_end_time ON auctions(end_time)'); } catch(e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_bids_auction_id ON bids(auction_id)'); } catch(e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_products_status ON products(status)'); } catch(e) {}
+  const userColumns = db.prepare('PRAGMA table_info(users)').all();
+  const hasColumn = (name) => userColumns.some((column) => column.name === name);
+
+  if (!hasColumn('email')) {
+    try { db.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch (e) {}
+  }
+  if (!hasColumn('full_name')) {
+    try { db.exec('ALTER TABLE users ADD COLUMN full_name TEXT'); } catch (e) {}
+  }
+  if (!hasColumn('reset_token')) {
+    try { db.exec('ALTER TABLE users ADD COLUMN reset_token TEXT'); } catch (e) {}
+  }
+  if (!hasColumn('reset_token_expires_at')) {
+    try { db.exec('ALTER TABLE users ADD COLUMN reset_token_expires_at DATETIME'); } catch (e) {}
+  }
+
+  try { db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email)'); } catch(e) {}
 
   return db;
 }

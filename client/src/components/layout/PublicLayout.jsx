@@ -1,10 +1,12 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Gavel, Search, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function PublicLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { bidderUser, isBidderAuthenticated, logoutBidder } = useAuth();
 
   const navLinks = [
     { to: '/', label: 'Home' },
@@ -51,6 +53,27 @@ export default function PublicLayout() {
               >
                 Admin
               </Link>
+              {isBidderAuthenticated ? (
+                <div className="ml-2 flex items-center gap-2">
+                  <span className="text-sm text-gray-600">Hi, {bidderUser?.fullName || bidderUser?.username}</span>
+                  <button
+                    type="button"
+                    onClick={logoutBidder}
+                    className="px-3 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <Link to="/login" className="ml-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+                    Sign In
+                  </Link>
+                  <Link to="/register" className="px-3 py-2 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                    Register
+                  </Link>
+                </>
+              )}
             </nav>
 
             {/* Mobile menu button */}
@@ -88,6 +111,35 @@ export default function PublicLayout() {
               >
                 Admin Panel
               </Link>
+              {isBidderAuthenticated ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    logoutBidder();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50"
+                >
+                  Logout ({bidderUser?.fullName || bidderUser?.username})
+                </button>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}

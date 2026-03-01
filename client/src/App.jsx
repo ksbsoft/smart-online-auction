@@ -5,6 +5,10 @@ import { useAuth } from './context/AuthContext';
 import HomePage from './pages/HomePage';
 import AuctionListPage from './pages/AuctionListPage';
 import AuctionDetailPage from './pages/AuctionDetailPage';
+import UserLoginPage from './pages/auth/UserLoginPage';
+import UserRegisterPage from './pages/auth/UserRegisterPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 
 // Admin pages
 import AdminLogin from './pages/admin/AdminLogin';
@@ -33,6 +37,10 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/auctions" element={<AuctionListPage />} />
         <Route path="/auctions/:id" element={<AuctionDetailPage />} />
+        <Route path="/login" element={<UserLoginPage />} />
+        <Route path="/register" element={<UserRegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Route>
 
       {/* Admin routes */}
