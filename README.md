@@ -55,7 +55,7 @@ This starts both the backend (port 3001) and frontend (port 5173).
 ### Production Build
 
 ```bash
-npm run build
+npm run build:client
 npm start
 ```
 
